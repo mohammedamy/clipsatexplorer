@@ -3,7 +3,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 const { ICON_B64, LOGO_B64 } = require('./brand-assets');
 
-const BASE_PATH = (process.env.BASE_PATH || '/mathigon-textbooks').replace(/\/+$/, '');
+const BASE_PATH = (process.env.BASE_PATH || '/clipsatexplorer').replace(/\/+$/, '');
 const OUT_DIR = path.resolve(process.cwd(), process.env.OUT_DIR || 'dist');
 const PORTS = [4567, 8080, 5000, 3000];
 
