@@ -991,7 +991,11 @@ large integers into primes…
 ---
 > id: crypto1
 
-{.todo} COMING SOON – RSA example with Alice and Bob
+Suppose **Alice** wants to send a secret number to **Bob** over a public channel.
+
+1. **Key generation (Bob):** Bob secretly picks two prime numbers, `p = 3` and `q = 11`, and multiplies them to get `n = 3 × 11 = [[33]]`. Next, he computes `φ(n) = (p - 1)(q - 1) = 2 × 10 = [[20]]` and chooses a public exponent `e = 7` (which shares no factors with `20`). Bob publishes his **public key** `(n = 33, e = 7)` to everyone, while keeping his **private key** `d = 3` secret (notice that `7 × 3 = 21 ≡ 1 (mod 20)`).
+2. **Encryption (Alice):** Alice wants to send the secret message `m = 2`. Using Bob's public key, she computes `c = m^e mod n = 2^7 mod 33 = 128 mod 33 = [[29]]` and sends `29` openly.
+3. **Decryption (Bob):** An eavesdropper who intercepts `29` cannot easily recover `2` without knowing `d` (or factoring `n`, which is practically impossible when `n` has hundreds of digits). Bob uses his private key `d = 3` to compute `m = c^d mod n = 29^3 mod 33 = [[2]]` and recovers the original message!
 
 This encryption algorithm is called __RSA Cryptography__, after its three
 inventors, Ron Rivest, Adi Shamir and Leonard Adleman who published it in 1977.
