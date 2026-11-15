@@ -1,9 +1,9 @@
-siteName: Mathigon
-description: A interactive textbook
+siteName: ClipSAT Math Explorer
+description: Interactive Mathematics Textbooks by ClipSAT
 domain: mathigon.org
 
 privacyURL: https://amplify.com/customer-privacy
-banner: (c) Mathigon
+banner: © ClipSAT Math Explorer
 locales: [en, ar, cn, de, es, fr, hi, hr, it, ja, pt, ro, ru, sv, tr, vi]
 
 search:
@@ -13,10 +13,8 @@ footer:
   rows:
     - links:
         - title: GitHub
-          url: https://github.com/mathigon/textbooks
-        - title: Live Website
-          url: https://mathigon.org/courses
-  copyright: © Mathigon, 2022
+          url: https://github.com/mohammedamy/mathigon-textbooks
+  copyright: © ClipSAT Math Explorer
 
 social:
   facebook: {}
