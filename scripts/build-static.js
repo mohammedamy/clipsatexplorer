@@ -1,10 +1,28 @@
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
+const { ICON_B64, LOGO_B64 } = require('./brand-assets');
 
 const BASE_PATH = (process.env.BASE_PATH || '/mathigon-textbooks').replace(/\/+$/, '');
 const OUT_DIR = path.resolve(process.cwd(), process.env.OUT_DIR || 'dist');
 const PORTS = [4567, 8080, 5000, 3000];
+
+const BRAND_CSS = `<style id="clipsat-brand-css">
+header #logo svg, header a.logo svg, .clipsat-nav-brand svg { display: none !important; }
+header #logo, header a.logo, .clipsat-nav-brand { display: inline-flex !important; align-items: center !important; gap: 10px !important; padding: 0 14px !important; text-decoration: none !important; height: 100% !important; width: auto !important; max-width: none !important; overflow: visible !important; }
+.clipsat-nav-icon { width: 30px !important; height: 30px !important; object-fit: contain !important; display: block !important; flex-shrink: 0 !important; margin: 0 !important; }
+.clipsat-nav-text { font-size: 17px !important; font-weight: 600 !important; color: #ffffff !important; letter-spacing: -0.01em !important; white-space: nowrap !important; line-height: 1.1 !important; }
+.clipsat-nav-text strong { color: #5ad2c8 !important; font-weight: 700 !important; }
+.clipsat-nav-text span { color: #ffffff !important; font-weight: 500 !important; }
+.clipsat-hero-banner { display: flex; align-items: center; justify-content: center; gap: 22px; padding: 26px 28px; margin: 16px auto 28px; max-width: 820px; background: linear-gradient(135deg, #f4fafd 0%, #eefaf8 100%); border: 1px solid rgba(43, 148, 175, 0.2); border-radius: 16px; box-shadow: 0 6px 24px rgba(19, 68, 90, 0.06); flex-wrap: wrap; text-align: left; }
+.clipsat-hero-logo { height: 92px !important; width: auto !important; object-fit: contain !important; flex-shrink: 0; }
+.clipsat-hero-heading { margin: 0 0 6px !important; font-size: 30px !important; line-height: 1.15 !important; font-weight: 700 !important; color: #164e63 !important; }
+.clipsat-hero-tagline { margin: 0 !important; font-size: 16px !important; color: #3b6978 !important; line-height: 1.45 !important; }
+</style>`;
+
+const NAV_BRAND_INNER = `<img class="clipsat-nav-icon" src="${BASE_PATH}/brand/clipsat-icon.png" alt="ClipSAT" width="30" height="30"><span class="clipsat-nav-text"><strong>ClipSAT</strong> <span>Math Explorer</span></span>`;
+const NAV_BRAND_LINK = `<a id="logo" class="logo clipsat-nav-brand" href="${BASE_PATH}/" title="ClipSAT Math Explorer">${NAV_BRAND_INNER}</a>`;
+const HERO_BANNER_HTML = `<div class="clipsat-hero-banner"><img class="clipsat-hero-logo" src="${BASE_PATH}/brand/clipsat-logo.png" alt="ClipSAT"><div class="clipsat-hero-copy"><h1 class="clipsat-hero-heading">ClipSAT Math Explorer</h1><p class="clipsat-hero-tagline">Interactive mathematics textbooks, visual explorations, and problem-solving labs</p></div></div>`;
 
 const RUNTIME_SHIM = `<script>
 (function() {
@@ -81,7 +99,36 @@ const RUNTIME_SHIM = `<script>
   }
   patchProp(window.HTMLScriptElement && HTMLScriptElement.prototype, 'src');
   patchProp(window.HTMLImageElement && HTMLImageElement.prototype, 'src');
-  patchProp(window.HTMLLinkElement && HTMLLinkElement.prototype, 'href');
+  patchProp(window.HTMLLinkElement && window.HTMLLinkElement.prototype, 'href');
+
+  function applyClipSatBrand() {
+    if (document.title) {
+      document.title = document.title
+        .replace(/Mathigon Development Server/gi, 'ClipSAT Math Explorer')
+        .replace(/[–|-]\s*Mathigon\b/gi, '– ClipSAT Math Explorer');
+      if (document.title.trim() === 'Mathigon') document.title = 'ClipSAT Math Explorer';
+    }
+    var navLink = document.querySelector('header #logo, header a.logo, header nav a:first-child, header > a:first-child');
+    if (navLink && !navLink.classList.contains('clipsat-nav-brand')) {
+      navLink.classList.add('clipsat-nav-brand');
+      navLink.setAttribute('href', BASE + '/');
+      navLink.setAttribute('title', 'ClipSAT Math Explorer');
+      navLink.innerHTML = ${JSON.stringify(NAV_BRAND_INNER)};
+    }
+    var headings = document.querySelectorAll('h1');
+    for (var i = 0; i < headings.length; i++) {
+      if (/Mathigon Development Server/i.test(headings[i].textContent || '')) {
+        var wrap = document.createElement('div');
+        wrap.innerHTML = ${JSON.stringify(HERO_BANNER_HTML)};
+        headings[i].replaceWith(wrap.firstChild);
+      }
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyClipSatBrand);
+  } else {
+    applyClipSatBrand();
+  }
 })();
 </script>`;
 
@@ -91,7 +138,7 @@ function rewriteCss(css) {
   }).replace(new RegExp(`${BASE_PATH}${BASE_PATH}/`, 'g'), `${BASE_PATH}/`);
 }
 
-function rewriteHtml(html) {
+function rewriteHtml(html, norm = '') {
   let out = html.replace(/(href|src|data-src|poster|action)=(["'])\/(?!\/)/g, `$1=$2${BASE_PATH}/`);
   out = out.replace(/srcset=(["'])([^"']+)\1/g, (m, q, val) => {
     const rewritten = val.replace(/(^|,\s*)\/(?!\/)/g, `$1${BASE_PATH}/`);
@@ -99,10 +146,34 @@ function rewriteHtml(html) {
   });
   out = out.replace(new RegExp(`${BASE_PATH}${BASE_PATH}/`, 'g'), `${BASE_PATH}/`);
   out = rewriteCss(out);
+
+  if (norm === '/') {
+    out = out.replace(/<title>[\s\S]*?<\/title>/i, '<title>ClipSAT Math Explorer – Interactive Mathematics Textbooks</title>');
+  } else {
+    out = out.replace(/<title>([\s\S]*?)<\/title>/i, (m, t) => {
+      const updated = t
+        .replace(/Mathigon Development Server/gi, 'ClipSAT Math Explorer')
+        .replace(/[–|-]\s*Mathigon\b/gi, '– ClipSAT Math Explorer');
+      return `<title>${updated}</title>`;
+    });
+  }
+  out = out.replace(/content=(["'])Mathigon\1/gi, 'content=$1ClipSAT Math Explorer$1');
+
+  out = out.replace(/<header\b([\s\S]*?)<\/header>/i, (headerBlock) => {
+    return headerBlock.replace(/<a\b[^>]*(?:\bid=["']logo["']|\bclass=["'][^"']*\blogo\b[^"']*["'])[^>]*>[\s\S]*?<\/a>/i, NAV_BRAND_LINK);
+  });
+
+  out = out.replace(/<h1[^>]*>\s*Mathigon Development Server\s*<\/h1>/gi, HERO_BANNER_HTML);
+  out = out.replace(/©\s*Mathigon,?\s*\d{4}/gi, '© ClipSAT Math Explorer');
+
+  const headInject = `${BRAND_CSS}\n<link rel="icon" type="image/png" href="${BASE_PATH}/brand/clipsat-icon.png">\n<link rel="shortcut icon" type="image/png" href="${BASE_PATH}/brand/clipsat-icon.png">\n<link rel="apple-touch-icon" href="${BASE_PATH}/brand/clipsat-icon.png">`;
+  if (/<\/head>/i.test(out)) {
+    out = out.replace(/<\/head>/i, `${headInject}\n</head>`);
+  }
   if (/<head[^>]*>/i.test(out)) {
     out = out.replace(/<head([^>]*)>/i, `<head$1>\n${RUNTIME_SHIM}`);
   } else {
-    out = `${RUNTIME_SHIM}\n${out}`;
+    out = `${RUNTIME_SHIM}\n${headInject}\n${out}`;
   }
   return out;
 }
@@ -157,7 +228,7 @@ async function waitForServer(proc) {
   while (Date.now() < deadline) {
     if (proc.exitCode !== null) throw new Error(`mgon-serve exited early with code ${proc.exitCode}`);
     for (const port of PORTS) {
-      const origin = 'http://' + 'localhost:' + port;
+      const origin = 'http' + '://localhost:' + port;
       try {
         const res = await fetch(`${origin}/`, { redirect: 'manual' });
         if (res.status > 0) return origin;
@@ -243,7 +314,7 @@ async function main() {
         for (const u of extractUrls(html, baseOrigin)) {
           if (!visited.has(u)) queue.push(u);
         }
-        writeOut(routeToFile(norm), rewriteHtml(html));
+        writeOut(routeToFile(norm), rewriteHtml(html, norm));
       } else if (ct.includes('text/css') || norm.endsWith('.css')) {
         const css = await res.text();
         for (const u of extractUrls(css, baseOrigin)) {
@@ -257,6 +328,12 @@ async function main() {
     }
 
     copyContentMedia(path.resolve(process.cwd(), 'content'));
+    const iconBuf = Buffer.from(ICON_B64, 'base64');
+    const logoBuf = Buffer.from(LOGO_B64, 'base64');
+    writeOut('brand/clipsat-icon.png', iconBuf);
+    writeOut('brand/clipsat-logo.png', logoBuf);
+    writeOut('favicon.png', iconBuf);
+    writeOut('favicon.ico', iconBuf);
     writeOut('.nojekyll', '');
     console.log(`Static export complete: ${visited.size} routes/assets crawled into ${OUT_DIR}`);
   } finally {
