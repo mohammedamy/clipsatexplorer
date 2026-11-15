@@ -24,7 +24,7 @@ social:
 
 courses:
   showLocked: true
-  revealAll: false
+  revealAll: true #falsetrue
   audio: false
 
 tutor:
