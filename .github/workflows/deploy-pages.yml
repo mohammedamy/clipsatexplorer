@@ -35,7 +35,7 @@ jobs:
       - name: Export static site
         run: node scripts/build-static.js
         env:
-          BASE_PATH: /mathigon-textbooks
+          BASE_PATH: /clipsatexplorer
           OUT_DIR: dist
 
       - name: Setup Pages
